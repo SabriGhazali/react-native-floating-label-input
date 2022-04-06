@@ -104,6 +104,11 @@ export interface Props extends Omit<TextInputProps, 'secureTextEntry'> {
   animationDuration?: number;
   /** Label Props */
   labelProps?: TextProps;
+
+  imgLabelSource?: string;
+
+  imgLabelStyle?: ImageStyle;
+
 }
 
 export interface SetGlobalStyles {
@@ -167,6 +172,9 @@ interface InputRef {
 
 const AnimatedText = Animated.createAnimatedComponent(Text);
 
+const AnimatedImage = Animated.createAnimatedComponent(Image);
+
+
 const FloatingLabelInput: React.ForwardRefRenderFunction<InputRef, Props> = (
   {
     label,
@@ -206,6 +214,8 @@ const FloatingLabelInput: React.ForwardRefRenderFunction<InputRef, Props> = (
     showPasswordImageStyles,
     value = '',
     animationDuration,
+    imgLabelSource,
+    imgLabelStyle,
     ...rest
   }: Props,
   ref: any,
@@ -225,6 +235,19 @@ const FloatingLabelInput: React.ForwardRefRenderFunction<InputRef, Props> = (
   };
 
   const [fontColorAnimated] = useState(new Animated.Value(0));
+
+
+  const [leftPaddingImageAnimated] = useState(
+    new Animated.Value(
+      isFocused
+        ? customLabelStyles.fontSizeFocused
+          ? customLabelStyles.fontSizeFocused+ 7
+          : 17
+        : customLabelStyles.fontSizeBlurred
+        ? customLabelStyles.fontSizeBlurred + 7
+        : 21,
+    ),
+  );
 
   const [fontSizeAnimated] = useState(
     new Animated.Value(
@@ -376,6 +399,13 @@ const FloatingLabelInput: React.ForwardRefRenderFunction<InputRef, Props> = (
           duration: animationDuration ? animationDuration : 300,
           easing: EasingNode.linear,
         }),
+        timing(leftPaddingImageAnimated, {
+          toValue: customLabelStyles.fontSizeFocused
+            ? customLabelStyles.fontSizeFocused + 7
+            : 17,
+          duration: animationDuration ? animationDuration : 300,
+          easing: EasingNode.linear,
+        }),
         timing(topAnimated, {
           toValue: customLabelStyles.topFocused
             ? customLabelStyles.topFocused
@@ -405,7 +435,7 @@ const FloatingLabelInput: React.ForwardRefRenderFunction<InputRef, Props> = (
       }).start();
     }
   }
-
+  
   function animateBlur() {
     if (!staticLabel) {
       ReactAnimated.parallel([
@@ -420,6 +450,13 @@ const FloatingLabelInput: React.ForwardRefRenderFunction<InputRef, Props> = (
           toValue: customLabelStyles.fontSizeBlurred
             ? customLabelStyles.fontSizeBlurred
             : 14,
+          duration: animationDuration ? animationDuration : 300,
+          easing: EasingNode.linear,
+        }),
+        timing(leftPaddingImageAnimated, {
+          toValue: customLabelStyles.fontSizeBlurred 
+            ? customLabelStyles.fontSizeBlurred + 7
+            : 21,
           duration: animationDuration ? animationDuration : 300,
           easing: EasingNode.linear,
         }),
@@ -637,12 +674,33 @@ const FloatingLabelInput: React.ForwardRefRenderFunction<InputRef, Props> = (
         <View style={containerStyles}>
           {leftComponent && leftComponent}
           <View style={{ flex: 1, flexDirection: 'row' }}>
+            { imgLabelSource? <AnimatedImage source={imgLabelSource} 
+            style={[
+              {
+                resizeMode:'contain',
+                alignSelf: 'center',
+                position: 'absolute',
+                flex: 1,
+                zIndex: 999,
+                width: fontSizeAnimated,
+                height: fontSizeAnimated,
+                transform: [
+                  { translateX: leftAnimated },
+                  { translateY: topAnimated },
+                ],
+              },
+            ]}
+            /> : null}
+            
             {!staticLabel && (
               <AnimatedText
                 {...labelProps}
                 onPress={setFocus}
                 style={[
                   style,
+                  imgLabelSource && {
+                    left: leftPaddingImageAnimated
+                  } ,
                   // @ts-ignore
                   {
                     fontSize: fontSizeAnimated,
